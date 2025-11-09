@@ -430,52 +430,7 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         walls.receiveShadow = true;
         roomGroup.add(walls);
         
-        // --- Window ---
-        const windowGroup = new Group();
-        const windowAngle = Math.PI; // Center of the back wall section
-        windowGroup.position.set(
-            Math.cos(windowAngle) * (wallRadius - 0.1),
-            4.5,
-            Math.sin(windowAngle) * (wallRadius - 0.1)
-        );
-        windowGroup.lookAt(0, 4.5, 0);
-        roomGroup.add(windowGroup);
-
-        const windowPane = new Mesh(
-            new PlaneGeometry(2.5, 3.5),
-            new MeshBasicMaterial({ color: 0x1A2345 })
-        );
-        windowPane.position.z = -0.1;
-        windowGroup.add(windowPane);
-
-        const starGeo = new BufferGeometry();
-        const starPos = new Float32Array(30 * 3);
-        for(let i=0; i<30; i++) {
-            starPos[i*3] = (Math.random() - 0.5) * 2.5;
-            starPos[i*3+1] = (Math.random() - 0.5) * 3.5;
-            starPos[i*3+2] = -0.09;
-        }
-        starGeo.setAttribute('position', new BufferAttribute(starPos, 3));
-        const stars = new Points(starGeo, new PointsMaterial({ color: 0xffffff, size: 0.02 }));
-        windowGroup.add(stars);
-
-        const frameMat = new MeshStandardMaterial({ color: 0xffffff });
-        const frameH = new Mesh(new BoxGeometry(2.7, 0.1, 0.2), frameMat);
-        frameH.position.y = 1.8;
-        const frameB = new Mesh(new BoxGeometry(2.7, 0.1, 0.2), frameMat);
-        frameB.position.y = -1.8;
-        const frameL = new Mesh(new BoxGeometry(0.1, 3.7, 0.2), frameMat);
-        frameL.position.x = -1.3;
-        const frameR = new Mesh(new BoxGeometry(0.1, 3.7, 0.2), frameMat);
-        frameR.position.x = 1.3;
-        windowGroup.add(frameH, frameB, frameL, frameR);
-        
-        // --- Moonlight ---
-        const moonLight = new SpotLight(0xADC8FF, 1.5, 20, Math.PI / 6, 0.5);
-        moonLight.position.set(windowGroup.position.x * 2, windowGroup.position.y, windowGroup.position.z * 2);
-        moonLight.castShadow = true;
-        moonLight.target.position.set(0, 0, 0);
-        scene.add(moonLight, moonLight.target);
+        // Removed window and moonlight
 
         // --- Picture Frames ---
         const createPictureFrame = (pos: Vector3) => {
@@ -493,6 +448,94 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         roomGroup.add(createPictureFrame(frame1Pos));
         const frame2Pos = new Vector3(Math.cos(Math.PI * 1.75) * (wallRadius - 0.2), 4, Math.sin(Math.PI * 1.75) * (wallRadius - 0.2));
         roomGroup.add(createPictureFrame(frame2Pos));
+
+        // --- Chairs ---
+        const createChair = (x: number, z: number, rotation: number) => {
+            const chairGroup = new Group();
+            const woodMat = new MeshStandardMaterial({ color: 0xA0826D, roughness: 0.7 });
+            const cushionMat = new MeshStandardMaterial({ color: 0xD4C5B9, roughness: 0.9 });
+
+            // Seat
+            const seat = new Mesh(new BoxGeometry(0.8, 0.1, 0.8), cushionMat);
+            seat.position.y = 1.0;
+            seat.castShadow = true;
+            chairGroup.add(seat);
+
+            // Backrest
+            const backrest = new Mesh(new BoxGeometry(0.8, 1.0, 0.1), woodMat);
+            backrest.position.y = 1.5;
+            backrest.position.z = -0.35;
+            backrest.castShadow = true;
+            chairGroup.add(backrest);
+
+            // Legs
+            const legGeo = new CylinderGeometry(0.05, 0.05, 1.0, 8);
+            const legPositions = [
+                [-0.3, 0.5, -0.3],
+                [0.3, 0.5, -0.3],
+                [-0.3, 0.5, 0.3],
+                [0.3, 0.5, 0.3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new Mesh(legGeo, woodMat);
+                leg.position.set(pos[0], pos[1], pos[2]);
+                leg.castShadow = true;
+                chairGroup.add(leg);
+            });
+
+            chairGroup.position.set(x, 0, z);
+            chairGroup.rotation.y = rotation;
+            return chairGroup;
+        };
+
+        roomGroup.add(createChair(-3.5, 3, Math.PI * 0.6));
+        roomGroup.add(createChair(3.5, 3, -Math.PI * 0.6));
+
+        // --- Party Banner ---
+        const bannerGroup = new Group();
+        const bannerY = 7.5;
+        const bannerMat = new MeshStandardMaterial({ color: 0xFADADD, roughness: 0.8, side: DoubleSide });
+        
+        // String
+        const stringGeo = new CylinderGeometry(0.02, 0.02, 10, 8);
+        const stringMat = new MeshStandardMaterial({ color: 0xE8D5C4 });
+        const string = new Mesh(stringGeo, stringMat);
+        string.rotation.z = Math.PI / 2;
+        string.position.y = bannerY;
+        bannerGroup.add(string);
+
+        // Flags
+        const flagColors = [0xFADADD, 0xFFF7EE, 0xEBD5B3, 0xCFE9E3, 0xFFF4E3];
+        for (let i = 0; i < 8; i++) {
+            const flagShape = new Shape();
+            flagShape.moveTo(0, 0);
+            flagShape.lineTo(0.4, 0);
+            flagShape.lineTo(0.2, -0.5);
+            
+            const flagGeo = new ExtrudeGeometry(flagShape, { depth: 0.02, bevelEnabled: false });
+            const flagMat = new MeshStandardMaterial({ 
+                color: flagColors[i % flagColors.length], 
+                roughness: 0.8,
+                side: DoubleSide 
+            });
+            const flag = new Mesh(flagGeo, flagMat);
+            flag.position.set(-4.5 + i * 1.2, bannerY, 0);
+            flag.rotation.y = Math.PI / 2;
+            flag.castShadow = true;
+            
+            // Add gentle sway
+            gsap.to(flag.rotation, {
+                z: (Math.random() - 0.5) * 0.1,
+                duration: 2 + Math.random() * 2,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut'
+            });
+            
+            bannerGroup.add(flag);
+        }
+        
+        scene.add(bannerGroup);
         
         // --- Cake Stand Group (for animation) ---
         const cakeStandGroup = new Group();
