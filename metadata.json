@@ -1,0 +1,7 @@
+{
+  "name": "A Surprise",
+  "description": "Create and send a personalized virtual birthday invitation with an interactive 3D cake. The recipient can blow out the candles using their microphone!",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
