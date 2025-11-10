@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from 'react';
-// FIX: Replace namespace import with destructured imports to resolve type errors.
 import {
     ACESFilmicToneMapping,
     AdditiveBlending,
@@ -31,7 +30,6 @@ import {
     Scene,
     Shape,
     SphereGeometry,
-    SpotLight,
     SRGBColorSpace,
     TubeGeometry,
     Vector3,
@@ -99,7 +97,7 @@ const createDrippingFrosting = (frostingColor: string): Mesh => {
     for (let i = 0; i < positionAttribute.count; i++) {
         vertex.fromBufferAttribute(positionAttribute, i);
 
-        if (vertex.y < baseHeight / 2 * 0.99) { // Don't affect the very top face
+        if (vertex.y < baseHeight / 2 * 0.99) {
             const angle = Math.atan2(vertex.z, vertex.x);
 
             const dripiness =
@@ -144,15 +142,13 @@ const createDrippingFrosting = (frostingColor: string): Mesh => {
     return frostingMesh;
 };
 
-
-// Helper to create toppings
 const createToppings = (scene: Scene, toppings: string[], frostingMesh: Mesh) => {
     const toppingObjects: Object3D[] = [];
     const cakeRadius = 1.5;
     
     const raycaster = new Raycaster();
-    const origin = new Vector3(0, 10, 0); // Start ray from high up
-    const direction = new Vector3(0, -1, 0); // Ray points down
+    const origin = new Vector3(0, 10, 0);
+    const direction = new Vector3(0, -1, 0);
 
     const getFrostingY = (x: number, z: number): number => {
         origin.set(x, 10, z);
@@ -161,12 +157,11 @@ const createToppings = (scene: Scene, toppings: string[], frostingMesh: Mesh) =>
         if (intersects.length > 0) {
             return intersects[0].point.y;
         }
-        return 2.7; // Fallback to a default height if no intersection
+        return 2.7;
     };
 
     const addTopping = (mesh: Object3D) => {
         toppingObjects.push(mesh);
-        // We will add to group later
     };
 
     if (toppings.includes('Sprinkles')) {
@@ -332,7 +327,6 @@ const createSmokeParticles = (position: Vector3, scene: Scene) => {
     }
 };
 
-
 const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeConfig, isPreview = false }) => {
     const mountRef = useRef<HTMLDivElement>(null);
     const flamesRef = useRef<Flame[]>([]);
@@ -376,10 +370,8 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         mainLight.shadow.bias = -0.0001;
         scene.add(mainLight);
 
-        // Materials
         const cakeMat = new MeshStandardMaterial({ color: cakeConfig.flavor, roughness: 0.8, metalness: 0.0 });
 
-        // Cake geometry
         const cakeGeo1 = new CylinderGeometry(2, 2.05, 1.5, 64);
         const cake1 = new Mesh(cakeGeo1, cakeMat);
         cake1.castShadow = true;
@@ -409,7 +401,6 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         
         const frosting = createDrippingFrosting(cakeConfig.frosting);
         
-        // --- Room Setup ---
         const roomGroup = new Group();
         scene.add(roomGroup);
 
@@ -429,10 +420,7 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         walls.rotation.y = Math.PI / 4;
         walls.receiveShadow = true;
         roomGroup.add(walls);
-        
-        // Removed window and moonlight
 
-        // --- Picture Frames ---
         const createPictureFrame = (pos: Vector3) => {
             const frameGroup = new Group();
             const frameMaterial = new MeshStandardMaterial({ color: 0x3a2a30 });
@@ -449,54 +437,9 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         const frame2Pos = new Vector3(Math.cos(Math.PI * 1.75) * (wallRadius - 0.2), 4, Math.sin(Math.PI * 1.75) * (wallRadius - 0.2));
         roomGroup.add(createPictureFrame(frame2Pos));
 
-        // --- Chairs ---
-        const createChair = (x: number, z: number, rotation: number) => {
-            const chairGroup = new Group();
-            const woodMat = new MeshStandardMaterial({ color: 0xA0826D, roughness: 0.7 });
-            const cushionMat = new MeshStandardMaterial({ color: 0xD4C5B9, roughness: 0.9 });
-
-            // Seat
-            const seat = new Mesh(new BoxGeometry(0.8, 0.1, 0.8), cushionMat);
-            seat.position.y = 1.0;
-            seat.castShadow = true;
-            chairGroup.add(seat);
-
-            // Backrest
-            const backrest = new Mesh(new BoxGeometry(0.8, 1.0, 0.1), woodMat);
-            backrest.position.y = 1.5;
-            backrest.position.z = -0.35;
-            backrest.castShadow = true;
-            chairGroup.add(backrest);
-
-            // Legs
-            const legGeo = new CylinderGeometry(0.05, 0.05, 1.0, 8);
-            const legPositions = [
-                [-0.3, 0.5, -0.3],
-                [0.3, 0.5, -0.3],
-                [-0.3, 0.5, 0.3],
-                [0.3, 0.5, 0.3]
-            ];
-            legPositions.forEach(pos => {
-                const leg = new Mesh(legGeo, woodMat);
-                leg.position.set(pos[0], pos[1], pos[2]);
-                leg.castShadow = true;
-                chairGroup.add(leg);
-            });
-
-            chairGroup.position.set(x, 0, z);
-            chairGroup.rotation.y = rotation;
-            return chairGroup;
-        };
-
-        roomGroup.add(createChair(-3.5, 3, Math.PI * 0.6));
-        roomGroup.add(createChair(3.5, 3, -Math.PI * 0.6));
-
-        // --- Party Banner ---
         const bannerGroup = new Group();
         const bannerY = 7.5;
-        const bannerMat = new MeshStandardMaterial({ color: 0xFADADD, roughness: 0.8, side: DoubleSide });
         
-        // String
         const stringGeo = new CylinderGeometry(0.02, 0.02, 10, 8);
         const stringMat = new MeshStandardMaterial({ color: 0xE8D5C4 });
         const string = new Mesh(stringGeo, stringMat);
@@ -504,7 +447,6 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         string.position.y = bannerY;
         bannerGroup.add(string);
 
-        // Flags
         const flagColors = [0xFADADD, 0xFFF7EE, 0xEBD5B3, 0xCFE9E3, 0xFFF4E3];
         for (let i = 0; i < 8; i++) {
             const flagShape = new Shape();
@@ -523,7 +465,6 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
             flag.rotation.y = Math.PI / 2;
             flag.castShadow = true;
             
-            // Add gentle sway
             gsap.to(flag.rotation, {
                 z: (Math.random() - 0.5) * 0.1,
                 duration: 2 + Math.random() * 2,
@@ -537,7 +478,6 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         
         scene.add(bannerGroup);
         
-        // --- Cake Stand Group (for animation) ---
         const cakeStandGroup = new Group();
         scene.add(cakeStandGroup);
         
@@ -552,6 +492,184 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ isBlowing, onCandlesOut, cakeCo
         frosting.position.y = cake2.position.y + cakeGeo2.parameters.height / 2 - 0.1;
 
         cakeStandGroup.add(plate, cake1, cake2, frosting);
+// === TABLE DECORATIONS ===
+
+// Juice Jar (same as before)
+const juiceJar = new Group();
+const jarBody = new Mesh(
+    new CylinderGeometry(0.5, 0.5, 1.6, 48),
+    new MeshPhysicalMaterial({ 
+        color: 0xFFE5B4, 
+        transparent: true, 
+        opacity: 0.65, 
+        roughness: 0.08, 
+        metalness: 0.15,
+        clearcoat: 0.5,
+        clearcoatRoughness: 0.1 
+    })
+);
+jarBody.position.y = plateHeight + 0.8;
+jarBody.castShadow = true;
+juiceJar.add(jarBody);
+
+const juice = new Mesh(
+    new CylinderGeometry(0.46, 0.46, 1.3, 48),
+    new MeshStandardMaterial({ color: 0xFFB347, transparent: true, opacity: 0.85 })
+);
+juice.position.y = plateHeight + 0.65;
+juiceJar.add(juice);
+
+const lid = new Mesh(
+    new CylinderGeometry(0.55, 0.55, 0.12, 48),
+    new MeshStandardMaterial({ color: 0xF4E3D7, roughness: 0.3 })
+);
+lid.position.y = plateHeight + 1.65;
+lid.castShadow = true;
+juiceJar.add(lid);
+
+juiceJar.position.set(-3.8, 0, -1.8);
+cakeStandGroup.add(juiceJar);
+
+// 🍪 Cookie Plate — Larger, more detailed, rougher, some stacked
+const cookiePlate = new Group();
+const cookiePlateBase = new Mesh(
+    new CylinderGeometry(2.0, 2.0, 0.1, 64),
+    new MeshStandardMaterial({ color: 0xFFF7EE, roughness: 0.25, metalness: 0.1 })
+);
+cookiePlateBase.position.y = plateHeight + 0.05;
+cookiePlateBase.castShadow = true;
+cookiePlate.add(cookiePlateBase);
+
+// cookie spread
+const cookiePositions = [];
+for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2;
+    const radius = 0.9 + Math.random() * 0.3;
+    cookiePositions.push({
+        x: Math.cos(angle) * radius * 0.9,
+        z: Math.sin(angle) * radius * 0.9,
+        stacked: Math.random() > 0.7 // 30% stacked
+    });
+}
+
+cookiePositions.forEach((pos) => {
+    const cookieMat = new MeshStandardMaterial({
+        color: 0xC96E2D,
+        roughness: 0.95,
+        metalness: 0.05
+    });
+
+    const cookie = new Mesh(
+        new CylinderGeometry(0.4, 0.4, 0.12, 64),
+        cookieMat
+    );
+    cookie.position.set(pos.x, plateHeight + 0.15, pos.z);
+    cookie.castShadow = true;
+    cookiePlate.add(cookie);
+
+    // stacked cookie for realism
+    if (pos.stacked) {
+        const topCookie = new Mesh(
+            new CylinderGeometry(0.4, 0.4, 0.12, 64),
+            cookieMat
+        );
+        topCookie.position.set(pos.x + (Math.random() - 0.5) * 0.05, plateHeight + 0.28, pos.z + (Math.random() - 0.5) * 0.05);
+        topCookie.rotation.y = Math.random() * Math.PI;
+        topCookie.castShadow = true;
+        cookiePlate.add(topCookie);
+    }
+
+    // chocolate chips
+    for (let j = 0; j < 10; j++) {
+        const chip = new Mesh(
+            new SphereGeometry(0.04, 12, 12),
+            new MeshStandardMaterial({ color: 0x3B2F2F, roughness: 0.9 })
+        );
+        const chipAngle = (j / 10) * Math.PI * 2;
+        chip.position.set(
+            pos.x + Math.cos(chipAngle) * 0.18,
+            plateHeight + 0.24 + Math.random() * 0.02,
+            pos.z + Math.sin(chipAngle) * 0.18
+        );
+        cookiePlate.add(chip);
+    }
+});
+
+cookiePlate.position.set(4.5, 0, -2.0);
+cakeStandGroup.add(cookiePlate);
+
+// 🌷 Flower Vase — 1.5× larger, softer realism, pastel touch
+const flowerVase = new Group();
+
+const vaseBody = new Mesh(
+    new CylinderGeometry(0.35, 0.45, 1.35, 64),
+    new MeshPhysicalMaterial({ 
+        color: 0xE8F6F8, 
+        roughness: 0.12, 
+        metalness: 0.05, 
+        clearcoat: 0.7,
+        clearcoatRoughness: 0.1,
+        transparent: true,
+        opacity: 0.9 
+    })
+);
+vaseBody.position.y = plateHeight + 0.68;
+vaseBody.castShadow = true;
+flowerVase.add(vaseBody);
+
+const flowerColors = [0xFFD6E0, 0xFFF8E1, 0xE5CCFF, 0xFFE6B3];
+const flowerPositions = [
+    { x: 0, z: 0, rot: 0 },
+    { x: 0.2, z: 0.15, rot: 0.25 },
+    { x: -0.18, z: 0.18, rot: -0.2 },
+    { x: 0.1, z: -0.2, rot: 0.35 }
+];
+
+flowerPositions.forEach((pos, i) => {
+    const stem = new Mesh(
+        new CylinderGeometry(0.02, 0.02, 1.2, 16),
+        new MeshStandardMaterial({ color: 0x2E8B57 })
+    );
+    stem.position.set(pos.x, plateHeight + 1.05, pos.z);
+    stem.rotation.z = pos.rot;
+    flowerVase.add(stem);
+
+    const center = new Mesh(
+        new SphereGeometry(0.12, 24, 24),
+        new MeshStandardMaterial({ color: 0xFFD700, roughness: 0.5 })
+    );
+    center.position.set(
+        pos.x + Math.sin(pos.rot) * 0.35,
+        plateHeight + 1.6,
+        pos.z
+    );
+    center.castShadow = true;
+    flowerVase.add(center);
+
+    const petalColor = flowerColors[i % flowerColors.length];
+    for (let j = 0; j < 8; j++) {
+        const petal = new Mesh(
+            new SphereGeometry(0.12, 20, 20),
+            new MeshStandardMaterial({ color: petalColor, roughness: 0.4 })
+        );
+        const angle = (j / 8) * Math.PI * 2;
+        petal.position.set(
+            center.position.x + Math.cos(angle) * 0.22,
+            center.position.y,
+            center.position.z + Math.sin(angle) * 0.22
+        );
+        petal.scale.set(0.75, 1.3, 0.75);
+        flowerVase.add(petal);
+    }
+});
+
+// Move further away from cake
+flowerVase.position.set(-3.5, 0, 3.2);
+cakeStandGroup.add(flowerVase);
+
+// === END TABLE DECORATIONS ===
+
+
         
         frosting.updateMatrixWorld(true);
         const toppings = createToppings(scene, cakeConfig.toppings, frosting);
