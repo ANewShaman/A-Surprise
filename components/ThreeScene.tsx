@@ -530,7 +530,7 @@ juiceJar.add(lid);
 juiceJar.position.set(-3.8, 0, -1.8);
 cakeStandGroup.add(juiceJar);
 
-// 🍪 Cookie Plate — Larger, more detailed, rougher, some stacked
+//Cookie Plate — Larger, more detailed, rougher, some stacked
 const cookiePlate = new Group();
 const cookiePlateBase = new Mesh(
     new CylinderGeometry(2.0, 2.0, 0.1, 64),
